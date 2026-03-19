@@ -31,16 +31,15 @@ export default function ChatPage() {
   const [allMessages, setAllMessages] = useState<Record<string, ChatMessage[]>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [voicePresence, setVoicePresence] = useState<Record<string, OnlineUser[]>>({});
   const socketRef = useRef<Socket | null>(null);
   const channelRef = useRef(channel);
   const router = useRouter();
 
-  // Keep channelRef in sync
   useEffect(() => {
     channelRef.current = channel;
   }, [channel]);
 
-  // Initialize socket ONCE
   useEffect(() => {
     const savedName = localStorage.getItem("turkord_username");
     if (!savedName) {
@@ -58,48 +57,50 @@ export default function ChatPage() {
     socketRef.current = s;
 
     s.on("connect", () => {
-      // Register presence
       s.emit("register-user", { username: savedName, avatarUrl: savedAvatar });
-      // Request history for all text channels
+      if (channelRef.current.type === "voice") {
+        s.emit("join-voice", channelRef.current.id);
+      }
       TEXT_CHANNELS.forEach((ch) => s.emit("join-channel", ch.id));
     });
 
-    // Receive channel history
     s.on("channel-history", (data: { channelId: string; messages: ChatMessage[] }) => {
-      setAllMessages((prev) => ({
-        ...prev,
-        [data.channelId]: data.messages,
-      }));
+      setAllMessages((prev) => ({ ...prev, [data.channelId]: data.messages }));
     });
 
-    // Receive new messages (globally, for ALL channels)
     s.on("new-message", (msg: ChatMessage) => {
       setAllMessages((prev) => {
         const existing = prev[msg.channelId] || [];
         if (existing.some((m) => m.id === msg.id)) return prev;
         return { ...prev, [msg.channelId]: [...existing, msg] };
       });
-
-      // If message is NOT for the currently active channel, increment unread
       if (msg.channelId !== channelRef.current.id) {
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [msg.channelId]: (prev[msg.channelId] || 0) + 1,
-        }));
+        setUnreadCounts((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
       }
     });
 
-    // Receive presence updates
-    s.on("presence-update", (users: OnlineUser[]) => {
-      setOnlineUsers(users);
-    });
+    s.on("presence-update", (users: OnlineUser[]) => setOnlineUsers(users));
+    s.on("voice-presence-update", (data: Record<string, OnlineUser[]>) => setVoicePresence(data));
 
-    return () => {
-      s.disconnect();
-    };
+    return () => { s.disconnect(); };
   }, [router]);
 
-  // Clear unread when switching to a channel
+  useEffect(() => {
+    if (socketRef.current && socketRef.current.connected && username) {
+      socketRef.current.emit("update-user", { username, avatarUrl });
+    }
+  }, [username, avatarUrl]);
+
+  useEffect(() => {
+    if (socketRef.current && socketRef.current.connected) {
+      if (channel.type === "voice") {
+        socketRef.current.emit("join-voice", channel.id);
+      } else {
+        socketRef.current.emit("leave-voice");
+      }
+    }
+  }, [channel.id, channel.type]);
+
   const handleSetChannel = useCallback((c: Channel) => {
     setChannel(c);
     setUnreadCounts((prev) => ({ ...prev, [c.id]: 0 }));
@@ -109,9 +110,9 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden relative transition-colors duration-300">
-      <Sidebar 
-        currentChannel={channel} 
-        setChannel={handleSetChannel} 
+      <Sidebar
+        currentChannel={channel}
+        setChannel={handleSetChannel}
         username={username}
         avatarUrl={avatarUrl}
         onOpenSettings={() => setIsSettingsOpen(true)}
