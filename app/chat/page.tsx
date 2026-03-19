@@ -109,13 +109,14 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden relative transition-colors duration-300">
-      <Sidebar
-        currentChannel={channel}
-        setChannel={handleSetChannel}
+      <Sidebar 
+        currentChannel={channel} 
+        setChannel={handleSetChannel} 
         username={username}
         avatarUrl={avatarUrl}
         onOpenSettings={() => setIsSettingsOpen(true)}
         unreadCounts={unreadCounts}
+        voicePresence={voicePresence}
       />
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
         {channel.type === "text" ? (
