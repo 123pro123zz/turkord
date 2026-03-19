@@ -13,6 +13,7 @@ interface SidebarProps {
   avatarUrl: string;
   onOpenSettings: () => void;
   unreadCounts: Record<string, number>;
+  voicePresence: Record<string, { username: string; avatarUrl: string }[]>;
 }
 
 export const TEXT_CHANNELS: Channel[] = [
@@ -24,10 +25,9 @@ export const VOICE_CHANNELS: Channel[] = [
   { id: "lounge", name: "Lounge", type: "voice" },
 ];
 
-export default function Sidebar({ currentChannel, setChannel, username, avatarUrl, onOpenSettings, unreadCounts }: SidebarProps) {
+export default function Sidebar({ currentChannel, setChannel, username, avatarUrl, onOpenSettings, unreadCounts, voicePresence }: SidebarProps) {
   return (
     <div className="flex h-full w-[300px] border-r border-borderMain bg-sidebar shrink-0 transition-colors">
-      {/* Servers Bar */}
       <div className="flex w-[72px] flex-col items-center border-r border-borderMain bg-background py-4 gap-4 transition-colors">
         <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-accent text-white shadow-sm cursor-pointer transition-transform hover:scale-105 active:scale-95">
           <Apple strokeWidth={1.5} size={24} />
@@ -38,7 +38,6 @@ export default function Sidebar({ currentChannel, setChannel, username, avatarUr
         </div>
       </div>
 
-      {/* Channels Bar */}
       <div className="flex flex-1 flex-col">
         <div className="flex h-14 items-center justify-between border-b border-borderMain px-4 transition-colors">
           <h2 className="font-semibold text-textMain tracking-tight">Turkord Space</h2>
@@ -75,23 +74,40 @@ export default function Sidebar({ currentChannel, setChannel, username, avatarUr
           <div>
             <h3 className="mb-2 px-2 text-xs font-semibold text-textMuted uppercase tracking-wider">Voice Channels</h3>
             <div className="space-y-0.5">
-              {VOICE_CHANNELS.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => setChannel(c)}
-                  className={`flex cursor-pointer items-center gap-2 rounded-apple px-2 py-1.5 transition-colors ${
-                    currentChannel.id === c.id ? "bg-background shadow-sm text-accent" : "text-textMuted hover:bg-sidebarHover hover:text-textMain"
-                  }`}
-                >
-                  <Mic strokeWidth={1.5} size={18} />
-                  <span className="text-sm font-medium">{c.name}</span>
-                </div>
-              ))}
+              {VOICE_CHANNELS.map((c) => {
+                const usersInVoice = voicePresence[c.id] || [];
+                return (
+                  <div key={c.id} className="flex flex-col">
+                    <div
+                      onClick={() => setChannel(c)}
+                      className={`flex cursor-pointer items-center gap-2 rounded-apple px-2 py-1.5 transition-colors ${
+                        currentChannel.id === c.id ? "bg-background shadow-sm text-accent" : "text-textMuted hover:bg-sidebarHover hover:text-textMain"
+                      }`}
+                    >
+                      <Mic strokeWidth={1.5} size={18} />
+                      <span className="text-sm font-medium">{c.name}</span>
+                    </div>
+
+                    {/* Discord-style Voice channel participants */}
+                    {usersInVoice.length > 0 && (
+                      <div className="flex flex-col gap-1 mt-1 pl-6 mb-2">
+                        {usersInVoice.map((u, i) => (
+                           <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-apple hover:bg-sidebarHover cursor-pointer group transition-colors">
+                              <div className="w-6 h-6 rounded-full overflow-hidden bg-accent text-white flex items-center justify-center text-[10px] shrink-0">
+                                 {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover"/> : u.username.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs text-textMuted font-medium truncate group-hover:text-textMain transition-colors">{u.username}</span>
+                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* User profile area */}
         <div className="flex items-center gap-3 border-t border-borderMain bg-sidebar p-4 shrink-0 transition-colors">
           <div className="h-8 w-8 rounded-full bg-accent text-white flex items-center justify-center font-semibold text-sm shrink-0 overflow-hidden shadow-sm">
             {avatarUrl ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" /> : username?.charAt(0).toUpperCase()}
