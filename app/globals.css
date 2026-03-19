@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #FFFFFF;
+    --bg-sidebar: #F5F5F7;
+    --bg-sidebar-hover: #E8E8ED;
+    --text-main: #1D1D1F;
+    --text-muted: #86868B;
+    --accent: #0071E3;
+    --border-main: #E5E5EA;
+  }
+
+  .theme-dark {
+    --bg-main: #1C1C1E;
+    --bg-sidebar: #121212;
+    --bg-sidebar-hover: #2C2C2E;
+    --text-main: #F5F5F7;
+    --text-muted: #98989D;
+    --accent: #0A84FF;
+    --border-main: #38383A;
+  }
+
+  .theme-dracula {
+    --bg-main: #282a36;
+    --bg-sidebar: #21222c;
+    --bg-sidebar-hover: #44475a;
+    --text-main: #f8f8f2;
+    --text-muted: #6272a4;
+    --accent: #ff79c6;
+    --border-main: #44475a;
+  }
+
+  .theme-midnight {
+    --bg-main: #0B0F19;
+    --bg-sidebar: #06080D;
+    --bg-sidebar-hover: #151A2C;
+    --text-main: #E2E8F0;
+    --text-muted: #64748B;
+    --accent: #38BDF8;
+    --border-main: #1E293B;
+  }
+
+  body {
+    @apply bg-background text-textMain h-screen w-screen overflow-hidden antialiased transition-colors duration-300;
+  }
+}
